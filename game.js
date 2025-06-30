@@ -68,7 +68,63 @@ function runGame() {
     window.addEventListener('keydown', handleKey);
   }
 
+  // Add navigation buttons
+  function addNavButtons() {
+    // Remove if already present
+    let prevBtn = document.getElementById('prevSongBtn');
+    let nextBtn = document.getElementById('nextSongBtn');
+    if (prevBtn) prevBtn.remove();
+    if (nextBtn) nextBtn.remove();
+
+    prevBtn = document.createElement('button');
+    prevBtn.id = 'prevSongBtn';
+    prevBtn.textContent = '⟨ Prev Song';
+    prevBtn.style.position = 'fixed';
+    prevBtn.style.top = '20px';
+    prevBtn.style.right = '180px';
+    prevBtn.style.zIndex = 1000;
+    prevBtn.style.fontSize = '24px';
+
+    nextBtn = document.createElement('button');
+    nextBtn.id = 'nextSongBtn';
+    nextBtn.textContent = 'Next Song ⟩';
+    nextBtn.style.position = 'fixed';
+    nextBtn.style.top = '20px';
+    nextBtn.style.right = '40px';
+    nextBtn.style.zIndex = 1000;
+    nextBtn.style.fontSize = '24px';
+
+    prevBtn.onclick = () => {
+      if (songIdx > 0) {
+        songIdx--;
+        sectionIdx = 0;
+        keyIdx = 0;
+        waitingForSpace = true;
+        render();
+        window.removeEventListener('keydown', handleKey);
+        window.removeEventListener('keydown', handleSpace);
+        window.addEventListener('keydown', handleSpace);
+      }
+    };
+    nextBtn.onclick = () => {
+      if (songIdx < songs.length - 1) {
+        songIdx++;
+        sectionIdx = 0;
+        keyIdx = 0;
+        waitingForSpace = true;
+        render();
+        window.removeEventListener('keydown', handleKey);
+        window.removeEventListener('keydown', handleSpace);
+        window.addEventListener('keydown', handleSpace);
+      }
+    };
+
+    document.body.appendChild(prevBtn);
+    document.body.appendChild(nextBtn);
+  }
+
   function render() {
+    addNavButtons();
     if (waitingForSpace) {
       renderPressSpace();
       return;
