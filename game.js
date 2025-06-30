@@ -26,6 +26,7 @@ function runGame() {
   let gameOver = false;
   let showConfetti = false;
   let sectionIdx = 0;
+  let waitingForSpace = true;
 
   function flattenKeys(song, sectionIdx) {
     // Returns array of {row, col, key} for the current section
@@ -39,7 +40,39 @@ function runGame() {
     return arr;
   }
 
+  function renderPressSpace() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '48px Arial';
+    ctx.fillStyle = 'black';
+    ctx.fillText('Press space', 40, 80);
+  }
+
+  async function startSong() {
+    waitingForSpace = false;
+    keyIdx = 0;
+    flatKeys = flattenKeys(songs[songIdx], sectionIdx);
+    render();
+    const utter1 = new window.SpeechSynthesisUtterance('Listen to this!');
+    window.speechSynthesis.cancel();
+    await new Promise(resolve => {
+      utter1.onend = _ => {
+        setTimeout(() => resolve(), 700);
+      }
+      utter1.onerror = resolve;
+      window.speechSynthesis.speak(utter1);
+    });
+    await replay(songs[songIdx]);
+    const utter2 = new window.SpeechSynthesisUtterance('Can you play it?');
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter2);
+    window.addEventListener('keydown', handleKey);
+  }
+
   function render() {
+    if (waitingForSpace) {
+      renderPressSpace();
+      return;
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (gameOver) {
       ctx.font = '80px Arial';
@@ -93,7 +126,7 @@ function runGame() {
       setTimeout(() => {
         showConfetti = true;
         render();
-      }, 800);
+      }, 1000);
       setTimeout(() => {
         // Utter praise for the song
         if (typeof window.speechSynthesis !== "undefined") {
@@ -165,18 +198,25 @@ function runGame() {
             'vivid',
             'charming',
             'heartfelt',
-            'magical',
+            'flamboyant',
             'uplifting',
-            'serene',
+            'surreal',
             'joyful',
             'impressive',
             'exquisite',
           ];
           const nouns = [
             'rendition',
+            'rendition',
+            'rendition',
+            'performance',
+            'performance',
             'performance',
             'interpretation',
+            'interpretation',
             'arrangement',
+            'delivery',
+            'delivery',
             'delivery',
             'take',
           ];
@@ -189,7 +229,7 @@ function runGame() {
           const intro = pickRandom(intros);
           const adj = pickRandom(adjectives);
           const noun = pickRandom(nouns);
-          const praise = `${exclamation} ${intro} ${adj} ${noun} of, ${title}!`;
+          const praise = `${exclamation} ${intro} ${adj} ${noun} of ${title}!`;
           const utter = new window.SpeechSynthesisUtterance(praise);
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(utter);
@@ -198,7 +238,7 @@ function runGame() {
       setTimeout(() => {
         showConfetti = false;
         render();
-      }, 4000);
+      }, 5000);
       setTimeout(() => {
         // Move to next song
         songIdx++;
@@ -208,10 +248,9 @@ function runGame() {
           render();
           return;
         }
-        keyIdx = 0;
-        flatKeys = flattenKeys(songs[songIdx], sectionIdx);
+        waitingForSpace = true;
         render();
-        window.addEventListener('keydown', handleKey);
+        window.addEventListener('keydown', handleSpace);
       }, 5000);
       return;
     }
@@ -252,8 +291,14 @@ function runGame() {
         isUttering = true;
         const utter = new window.SpeechSynthesisUtterance(`Press ${correctKey}`);
         window.speechSynthesis.cancel();
-        utter.onend = () => { isUttering = false; };
-        utter.onerror = () => { isUttering = false; };
+        utter.onend = () => {
+          isUttering = false;
+          simpleKeyboard.turnOn();
+        };
+        utter.onerror = () => {
+          isUttering = false;
+          simpleKeyboard.turnOn();
+        };
         window.speechSynthesis.speak(utter);
       }
     }
@@ -263,250 +308,22 @@ function runGame() {
     pressedKeys[e.code] = false;
   }
 
+  function handleSpace(e) {
+    if (e.code === 'Space' || e.key === ' ') {
+      window.removeEventListener('keydown', handleSpace);
+      startSong();
+    }
+  }
+
   // Start first song, first section
   sectionIdx = 0;
   keyIdx = 0;
-  flatKeys = flattenKeys(songs[songIdx], sectionIdx);
+  waitingForSpace = true;
   render();
-  window.addEventListener('keydown', handleKey);
+  window.addEventListener('keydown', handleSpace);
   window.addEventListener('keyup', handleKeyUp);
 }
 
-/*
-More song ideas:
 
-*/
-const songs = [
-  {
-    name: 'Mary Had a Little Lamb (short)',
-    keys: [
-      [
-        '3 2 1 2',
-        '3 3 3 3',
-        '2 2 3 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Twinkle Twinkle Little Star (short)',
-    keys: [
-      [
-        '1 1 5 5',
-        '6 6 5 -',
-        '4 4 3 3',
-        '2 2 1 -',
-      ],
-    ],
-  },
-  {
-    name: 'Jingle Bells (short)',
-    keys: [
-      [
-        '3 3 3 -',
-        '3 3 3 -',
-        '3 5 1 2',
-        '3 - - -',
-        '4 4 4 4',
-        '4 3 3 3',
-        '5 5 4 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Lightly Row (short)',
-    keys: [
-      [
-        '5 3 3 -',
-        '4 2 2 -',
-        '1 3 5 5',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Long, Long Ago (short)',
-    keys: [
-      [
-        '1 - 1 2',
-        '3 - 3 4',
-        '5 - 6 5',
-        '3 - - -',
-        '5 - 4 3',
-        '2 - 3 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'On Top of Old Smoky (short)',
-    keys: [
-      [
-        '- - 1 1 3 5',
-        '8 - - 6 - -',
-        '- - 6 4 5 6',
-        '5 - - - - -',
-        '- - 3 1 3 5',
-        '5 - - 2 - -',
-        '- - 3 4 3 2',
-        '1 - - - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Aura Lee (short)',
-    keys: [
-      [
-        '5 8 7 8',
-        '9 6 9 -',
-        '8 7 6 7',
-        '8 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Minuet (short)',
-    keys: [
-      [
-        '5 - 1 2 3 4',
-        '5 - 1 - 1 -',
-        '6 - 4 5 6 7',
-        '8 - 1 - 1 -',
-        '4 - 5 4 3 2',
-        '3 - 4 3 2 1',
-        '2 - 1 2 3 1',
-        '3 - 2 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Canon (short)',
-    keys: [
-      [
-        '0 - - -',
-        '9 - - -',
-        '8 - - -',
-        '7 - - -',
-        '6 - - -',
-        '5 - - -',
-        '6 - - -',
-        '7 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Shall We Talk (short)',
-    keys: [
-      [
-        '1 - 3 -',
-        '5 - - 5',
-        '6 7 8 6',
-        '5 - - 5',
-        '6 7 8 9',
-        '8 5 3 1',
-        '3 - - 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Ju Hua Tai (short)',
-    keys: [
-      [
-        '3 - 3 2',
-        '3 - - -',
-        '3 5 3 2',
-        '3 - - -',
-        '1 - 1 2',
-        '3 5 3 -',
-        '2 - 2 1',
-        '2 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Mary Had a Little Lamb',
-    keys: [
-      [
-        '3 2 1 2',
-        '3 3 3 -',
-        '2 2 2 -',
-        '3 5 5 -',
-      ],
-      [
-        '3 2 1 2',
-        '3 3 3 3',
-        '2 2 3 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Twinkle Twinkle Little Star',
-    keys: [
-      [
-        '1 1 5 5',
-        '6 6 5 -',
-        '4 4 3 3',
-        '2 2 1 -',
-      ],
-      [
-        '5 5 4 4',
-        '3 3 2 -',
-        '5 5 4 4',
-        '3 3 2 -',
-      ],
-      [
-        '1 1 5 5',
-        '6 6 5 -',
-        '4 4 3 3',
-        '2 2 1 -',
-      ],
-    ],
-  },
-  {
-    name: 'Jingle Bells',
-    keys: [
-      [
-        '3 3 3 -',
-        '3 3 3 -',
-        '3 5 1 2',
-        '3 - - -',
-        '4 4 4 4',
-        '4 3 3 3',
-        '3 2 2 3',
-        '2 - 5 -',
-      ],
-      [
-        '3 3 3 -',
-        '3 3 3 -',
-        '3 5 1 2',
-        '3 - - -',
-        '4 4 4 4',
-        '4 3 3 3',
-        '5 5 4 2',
-        '1 - - -',
-      ],
-    ],
-  },
-  {
-    name: 'Lightly Row',
-    keys: [
-      [
-        '5 3 3 -',
-        '4 2 2 -',
-        '1 2 3 4',
-        '5 5 5 -',
-      ],
-      [
-        '5 3 3 -',
-        '4 2 2 -',
-        '1 3 5 5',
-        '1 - - -',
-      ],
-    ],
-  },
-];
 
 runGame();

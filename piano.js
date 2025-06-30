@@ -2,6 +2,81 @@
 var pedalOn = false;
 var volumeRange = 120;
 
+class SimpleKeyboard {
+  constructor() {
+    this.channel = 0;
+    this.velocity = 120;
+  }
+  turnOn() {
+    this.velocity = 120;
+  }
+  turnOff() {
+    this.velocity = 0;
+  }
+  connectKeyToKeyboard() {
+    var self = this;
+    var downKeys = {};
+
+    $(window).on('keydown.keyboard', evt => {
+      if (typeof event !== 'undefined') {
+        var d = event.srcElement || event.target;
+
+        var inInputField = (d.tagName.toUpperCase() === 'INPUT' && (d.type.toUpperCase() === 'TEXT' || d.type.toUpperCase() === 'PASSWORD' || d.type.toUpperCase() === 'FILE')) 
+                 || d.tagName.toUpperCase() === 'TEXTAREA';
+      }
+      
+      if (inInputField) return ;
+
+      var keyCode = fixKeyCode(evt.keyCode);
+      if (downKeys[keyCode] === true) {
+        return ;
+      } else {
+        downKeys[keyCode] = true;
+      }
+
+      var noteNumber = convertKeyCodeToNote(keyCode);
+
+      if (typeof noteNumber !== "undefined") {
+        $(window).trigger('keyboardDown', {
+          time: new Date().getTime(),
+          keyCode: keyCode,
+          noteNumber: noteNumber,
+          channel: this.channel,
+          velocity: this.velocity,
+          pedalOn: pedalOn,
+          userTriggered: true,
+        });
+      }
+
+      // prevent backspace from navigating back in the browser
+      if (evt.which === 8 || evt.which === 32) {
+        evt.preventDefault();
+      }
+    });
+
+    $(window).on('keyup.keyboard', (evt) => {
+      var keyCode = fixKeyCode(evt.keyCode);
+
+      delete downKeys[keyCode];
+
+      var noteNumber = convertKeyCodeToNote(keyCode);
+
+      if (typeof noteNumber !== "undefined") {
+        $(window).trigger('keyboardUp', {
+          time: new Date().getTime(),
+          keyCode: keyCode,
+          noteNumber: noteNumber,
+          channel: this.channel,
+          velocity: this.velocity,
+          pedalOn: pedalOn,
+          userTriggered: true,
+        });
+      }
+    });
+  }
+}
+
+const simpleKeyboard = new SimpleKeyboard;
 
 window.onload = function () {
 	MIDI.loadPlugin({
@@ -40,80 +115,7 @@ loadSound = function() {
 function damp(velocity, note, volumeRange) {
   return velocity * volumeRange / 100;
 }
-simpleKeyboard = {
-  channel: 0,
-  velocity: 120,
-  shift: 0,
-  hasPedal: true,
-  turnOn: () => {
-    this.velocity = 120;
-  },
-  turnOff: () => {
-    this.velocity = 0;
-  },
-  connectKeyToKeyboard: () => {
-    var self = this;
-    var downKeys = {};
 
-    $(window).on('keydown.keyboard', function(evt) {
-      if (typeof event !== 'undefined') {
-        var d = event.srcElement || event.target;
-
-        var inInputField = (d.tagName.toUpperCase() === 'INPUT' && (d.type.toUpperCase() === 'TEXT' || d.type.toUpperCase() === 'PASSWORD' || d.type.toUpperCase() === 'FILE')) 
-                 || d.tagName.toUpperCase() === 'TEXTAREA';
-      }
-      
-      if (inInputField) return ;
-
-      var keyCode = fixKeyCode(evt.keyCode);
-      if (downKeys[keyCode] === true) {
-        return ;
-      } else {
-        downKeys[keyCode] = true;
-      }
-
-      var noteNumber = convertKeyCodeToNote(keyCode);
-
-      if (typeof noteNumber !== "undefined") {
-        $(window).trigger('keyboardDown', {
-          time: new Date().getTime(),
-          keyCode: keyCode,
-          noteNumber: noteNumber,
-          channel: self.channel,
-          velocity: self.velocity,
-          pedalOn: pedalOn,
-          userTriggered: true,
-        });
-      }
-
-      // prevent backspace from navigating back in the browser
-      if (evt.which === 8 || evt.which === 32) {
-        evt.preventDefault();
-      }
-    });
-
-    $(window).on('keyup.keyboard', function(evt) {
-      var keyCode = fixKeyCode(evt.keyCode);
-
-      delete downKeys[keyCode];
-
-      var noteNumber = convertKeyCodeToNote(keyCode);
-
-      if (typeof noteNumber !== "undefined") {
-        $(window).trigger('keyboardUp', {
-          time: new Date().getTime(),
-          keyCode: keyCode,
-          noteNumber: noteNumber,
-          channel: self.channel,
-          velocity: self.velocity,
-          pedalOn: pedalOn,
-          userTriggered: true,
-        });
-      }
-    });
-  },
-
-}
 
 ////// helpers
 function fixKeyCode(keyCode) {
@@ -253,20 +255,20 @@ noteToName = function(noteNumber, alphabet) {
 
 
 keyCodeToNote = {
-  192: 47, // 1
-  49: 48, // 1
-  50: 50,
-  51: 52,
-  52: 53,
-  53: 55,
-  54: 57,
-  55: 59,
-  56: 60,
-  57: 62,
-  48: 64,
-  189: 65,
-  187: 67,
-  8: 69, // backspace
+  192: 47 + 12,
+  49: 48+ 12, // 1
+  50: 50+ 12,
+  51: 52+ 12,
+  52: 53+ 12,
+  53: 55+ 12,
+  54: 57+ 12,
+  55: 59+ 12,
+  56: 60+ 12,
+  57: 62+ 12,
+  48: 64+ 12,
+  189: 65+ 12,
+  187: 67+ 12,
+  8: 69+ 12, // backspace
 };
 
 noteToKeyCode = {};
