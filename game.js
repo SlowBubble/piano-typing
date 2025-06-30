@@ -1,5 +1,5 @@
 /*
-Game rule:
+Basic rule:
 - Render the song in a canvas
   - The name on top left
   - Followed by each row of the keys (stripping out the "-")
@@ -7,8 +7,11 @@ Game rule:
 - When the user press the correct key on the keyboard (matching the highlighted key), move to the next key to highlight.
 - When the user complete a song, display a row of confetti emojis, and wait 2 seconds and move on to the next song and repeat the steps above
 - After reaching the end of the song list, render "Game Over".
-Change:
+More rules:
 - Make sure if the key is pressed down, multiple keydown events will only trigger once
+Changes:
+- If the correct key is pressed, call simpleKeyboard.turnOn();
+- If the incorrect key is pressed, utter `Press ${correctKey}` and call simpleKeyboard.turnOff();
 */
 function runGame() {
   const canvas = document.createElement('canvas');
@@ -58,7 +61,7 @@ function runGame() {
     section.forEach((row, rIdx) => {
       let y = 240 + rIdx * 96;
       let x = 120;
-      row.split(' ').forEach((k, cIdx) => {
+      row.split(' ').filter(k => k !== '').forEach((k, cIdx) => {
         let highlight = false;
         if (!gameOver && flatKeys[keyIdx] && flatKeys[keyIdx].row === rIdx && flatKeys[keyIdx].col === cIdx) {
           highlight = true;
@@ -87,12 +90,115 @@ function runGame() {
     sectionIdx++;
     if (sectionIdx >= song.keys.length) {
       // Only show confetti and wait between songs
-      showConfetti = true;
-      render();
+      setTimeout(() => {
+        showConfetti = true;
+        render();
+      }, 800);
+      setTimeout(() => {
+        // Utter praise for the song
+        if (typeof window.speechSynthesis !== "undefined") {
+          const title = song.name.replace(/\s*\(.*?\)\s*$/, '');
+          const exclamations = [
+          'Bless my soul! ',
+          'Bless my beard! ',
+          'Bless my eye brows! ',
+          'God bless the next generation! ',
+          'Amazing effort! ',
+          'What an effort! ',
+          'I cannot commend you enough for your dedication! ',
+          'No words can do justice to your work ethic! ',
+          'Hard work really works! ',
+          'Persistent practice really pays! ',
+          'Practice really makes possible! ',
+          'Mamma Mia! ',
+          'Ay caramba! ',
+          'Jesus! ',
+          'Jesus Christ! ',
+          'Oh, snap! ',
+          'My god! ',
+          'Holy Moly! ',
+          'Woo Hoo! ',
+          'Am I in a dream? ',
+          'Is this real? ',
+          'This is surreal! ',
+          'Are my eyes fooling me? ',
+          'How did you do that? ',
+          'Did you hear my jaw dropping! ',
+          'I am speechless! ',
+          'I do not know what to say! ',
+          'That is so cool! ',
+          'Brilliant achievement! ',
+          'Astounding feat! ',
+          'Fabulous job! ',
+          'Fantastic work! ',
+          'Oh my god! ',
+          'Oh my lord! ',
+          'My goodness! ',
+          'Goodness gracious! ',
+          'Well done! ',
+          'Way to go! ',
+          'Awesome work! ',
+          'Great job! ',
+        ];
+          const intros = [
+            'What a',
+            'This is such a',
+            'That is such a',
+          ]
+          const adjectives = [
+            'beautiful',
+            'stunning',
+            'powerful',
+            'moving',
+            'inspiring',
+            'touching',
+            'brilliant',
+            'captivating',
+            'elegant',
+            'graceful',
+            'majestic',
+            'soulful',
+            'enchanting',
+            'delightful',
+            'radiant',
+            'expressive',
+            'vivid',
+            'charming',
+            'heartfelt',
+            'magical',
+            'uplifting',
+            'serene',
+            'joyful',
+            'impressive',
+            'exquisite',
+          ];
+          const nouns = [
+            'rendition',
+            'performance',
+            'interpretation',
+            'arrangement',
+            'delivery',
+            'take',
+          ];
+
+          // pick randomly from adjectives, nouns and verbs
+          function pickRandom(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+          }
+          const exclamation = pickRandom(exclamations);
+          const intro = pickRandom(intros);
+          const adj = pickRandom(adjectives);
+          const noun = pickRandom(nouns);
+          const praise = `${exclamation} ${intro} ${adj} ${noun} of, ${title}!`;
+          const utter = new window.SpeechSynthesisUtterance(praise);
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utter);
+        }
+      }, 1500);
       setTimeout(() => {
         showConfetti = false;
         render();
-      }, 1200);
+      }, 4000);
       setTimeout(() => {
         // Move to next song
         songIdx++;
@@ -106,7 +212,7 @@ function runGame() {
         flatKeys = flattenKeys(songs[songIdx], sectionIdx);
         render();
         window.addEventListener('keydown', handleKey);
-      }, 1500);
+      }, 5000);
       return;
     }
     // Move to next section immediately (no confetti, no wait)
@@ -117,14 +223,19 @@ function runGame() {
   }
 
   let pressedKeys = {};
+  let isUttering = false;
 
   function handleKey(e) {
     if (gameOver) return;
+    if (isUttering) return;
     if (pressedKeys[e.code]) return; // Ignore repeat while held
     pressedKeys[e.code] = true;
-    const song = songs[songIdx];
     if (!flatKeys[keyIdx]) return;
-    if (e.key === flatKeys[keyIdx].key) {
+    const correctKey = flatKeys[keyIdx].key;
+    if (e.key === correctKey) {
+      if (typeof simpleKeyboard !== "undefined" && simpleKeyboard.turnOn) {
+        simpleKeyboard.turnOn();
+      }
       keyIdx++;
       if (keyIdx >= flatKeys.length) {
         // Section complete
@@ -133,6 +244,18 @@ function runGame() {
         return;
       }
       render();
+    } else if (!e.ctrlKey && !e.metaKey) {
+      if (typeof simpleKeyboard !== "undefined" && simpleKeyboard.turnOff) {
+        simpleKeyboard.turnOff();
+      }
+      if (typeof window.speechSynthesis !== "undefined") {
+        isUttering = true;
+        const utter = new window.SpeechSynthesisUtterance(`Press ${correctKey}`);
+        window.speechSynthesis.cancel();
+        utter.onend = () => { isUttering = false; };
+        utter.onerror = () => { isUttering = false; };
+        window.speechSynthesis.speak(utter);
+      }
     }
   }
 
@@ -221,7 +344,7 @@ const songs = [
     keys: [
       [
         '- - 1 1 3 5',
-        '8 - -  6 - -',
+        '8 - - 6 - -',
         '- - 6 4 5 6',
         '5 - - - - -',
         '- - 3 1 3 5',

@@ -42,10 +42,16 @@ function damp(velocity, note, volumeRange) {
 }
 simpleKeyboard = {
   channel: 0,
-  velocity: 80,
+  velocity: 120,
   shift: 0,
   hasPedal: true,
-  connectKeyToKeyboard: function() {
+  turnOn: () => {
+    this.velocity = 120;
+  },
+  turnOff: () => {
+    this.velocity = 0;
+  },
+  connectKeyToKeyboard: () => {
     var self = this;
     var downKeys = {};
 
@@ -69,8 +75,6 @@ simpleKeyboard = {
       var noteNumber = convertKeyCodeToNote(keyCode);
 
       if (typeof noteNumber !== "undefined") {
-        noteNumber = self.adjustShift(noteNumber);
-        
         $(window).trigger('keyboardDown', {
           time: new Date().getTime(),
           keyCode: keyCode,
@@ -96,7 +100,6 @@ simpleKeyboard = {
       var noteNumber = convertKeyCodeToNote(keyCode);
 
       if (typeof noteNumber !== "undefined") {
-        noteNumber = self.adjustShift(noteNumber);
         $(window).trigger('keyboardUp', {
           time: new Date().getTime(),
           keyCode: keyCode,
@@ -110,11 +113,6 @@ simpleKeyboard = {
     });
   },
 
-  adjustShift: function(noteNumber) {
-      console.log(this.shift)
-    noteNumber += this.shift;
-    return noteNumber;
-  },
 }
 
 ////// helpers
