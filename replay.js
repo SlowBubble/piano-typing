@@ -11,7 +11,6 @@ const charToNoteNum = {
   0: 64+ 12,
 }
 
-const noteDurMs = 400;
 
 /*
 Given an item from songs, play each note
@@ -25,8 +24,10 @@ Given an item from songs, play each note
   - When triggering the next keyboardDown, remember to trigger keyboardUp for the previous note
   - Each note should last 400ms
   - don't trigger anything for '-', but should still have the same duration as a note
-*/
-function replay(song) {
+  - If song.swing > 0, then use noteDurMs * song.swing for the even notes' duration.
+  */
+ function replay(song) {
+  const noteDurMs = song.noteDurMs || 400;
   // Flatten all keys into a sequence of notes (including '-') for timing
   const notes = [];
   // Support both old and new song format (list of string or list of list of string)
@@ -57,12 +58,16 @@ function replay(song) {
         return;
       }
       const noteChar = notes[idx];
+      // Determine duration for this note
+      let dur = noteDurMs;
+      if (song.swing && idx % 2 === 1) {
+        dur = noteDurMs * song.swing;
+      }
       if (noteChar === '-') {
         idx++;
-        setTimeout(playNext, noteDurMs);
+        setTimeout(playNext, dur);
         if (idx === notes.length) {
-          // If last note is '-', resolve after delay
-          setTimeout(resolve, noteDurMs);
+          setTimeout(resolve, dur);
         }
         return;
       }
@@ -85,7 +90,7 @@ function replay(song) {
         prevNoteNumber = noteNumber;
       }
       idx++;
-      setTimeout(playNext, noteDurMs);
+      setTimeout(playNext, dur);
     }
     playNext();
   });

@@ -14,6 +14,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.7,
   },
   {
     name: 'Twinkle Twinkle Little Star (short)',
@@ -25,6 +26,7 @@ const songs = [
         '2 2 1 -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Lightly Row (short)',
@@ -36,6 +38,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.9,
   },
   {
     name: 'Aura Lee (short)',
@@ -47,6 +50,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.9,
   },
   {
     name: 'Hot Cross Buns',
@@ -62,6 +66,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Long, Long Ago (short)',
@@ -76,6 +81,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Cherry Blossom (short)',
@@ -90,6 +96,7 @@ const songs = [
         '3 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Jingle Bells (short)',
@@ -105,6 +112,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.7,
   },
   {
     name: 'Canon (short)',
@@ -135,6 +143,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.9,
   },
   {
     name: 'Ju Hua Tai (short)',
@@ -150,6 +159,23 @@ const songs = [
         '2 - - -',
       ],
     ],
+    swing: 0.8,
+  },
+  {
+    name: 'Years of friendship (short)',
+    keys: [
+      [
+        '1 - 2 3',
+        '- 5 - -',
+        '4 - 3 2',
+        '- 1 - -',
+        '4 - 3 -',
+        '5 5 - 2',
+        '3 - - -',
+      ],
+    ],
+    swing: 0.8,
+    noteDurMs: 300,
   },
   {
     name: 'On Top of Old Smoky (short)',
@@ -165,6 +191,7 @@ const songs = [
         '1 - - - - -',
       ],
     ],
+    noteDurMs: 300,
   },
   {
     name: 'Minuet (short)',
@@ -180,6 +207,7 @@ const songs = [
         '3 - 2 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Exercise 1a',
@@ -219,6 +247,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Exercise 1b',
@@ -232,6 +261,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Exercise 2b',
@@ -245,6 +275,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Exercise 3c',
@@ -258,6 +289,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Exercise 4a',
@@ -271,6 +303,7 @@ const songs = [
         '8 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Mary Had a Little Lamb',
@@ -288,6 +321,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Twinkle Twinkle Little Star',
@@ -311,6 +345,7 @@ const songs = [
         '2 2 1 -',
       ],
     ],
+    swing: 0.9,
   },
   {
     name: 'Jingle Bells',
@@ -336,6 +371,7 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.8,
   },
   {
     name: 'Lightly Row',
@@ -353,5 +389,6 @@ const songs = [
         '1 - - -',
       ],
     ],
+    swing: 0.9,
   },
 ];
