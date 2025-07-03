@@ -78,6 +78,20 @@ const songs = [
     ],
   },
   {
+    name: 'Cherry Blossom (short)',
+    keys: [
+      [
+        '6 - 6 -',
+        '7 - - -',
+        '6 - 6 -',
+        '7 - - -',
+        '3 - 4 -',
+        '7 6 4 -',
+        '3 - - -',
+      ],
+    ],
+  },
+  {
     name: 'Jingle Bells (short)',
     keys: [
       [
