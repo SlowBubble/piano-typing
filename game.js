@@ -254,10 +254,9 @@ function runGame() {
             'vivid',
             'charming',
             'heartfelt',
-            'flamboyant',
-            'uplifting',
+            'amazing',
+            'masterful',
             'surreal',
-            'joyful',
             'impressive',
             'exquisite',
           ];
@@ -328,6 +327,12 @@ function runGame() {
     if (!flatKeys[keyIdx]) return;
     const correctKey = flatKeys[keyIdx].key;
     if (e.key === correctKey) {
+      // Utter the key out loud
+      if (typeof window.speechSynthesis !== "undefined") {
+        const utter = new window.SpeechSynthesisUtterance(simplifyChar(correctKey));
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      }
       if (typeof simpleKeyboard !== "undefined" && simpleKeyboard.turnOn) {
         simpleKeyboard.turnOn();
       }
@@ -380,6 +385,21 @@ function runGame() {
   window.addEventListener('keyup', handleKeyUp);
 }
 
-
+function simplifyChar(char) {
+  if (char === '7') {
+    return 'Sev';
+  }
+  // if (char === '8') {
+  //   return '1';
+  // }
+  // if (char === '9') {
+  //   return '2';
+  // }
+  if (char === '0') {
+  //   return '3';
+    return '10';
+  }
+  return char;
+}
 
 runGame();
