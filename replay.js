@@ -25,9 +25,11 @@ Given an item from songs, play each note
   - Each note should last 400ms
   - don't trigger anything for '-', but should still have the same duration as a note
   - If song.swing > 0, then use noteDurMs * song.swing for the even notes' duration.
+  Change:
+  - Utter the character the same time we play the note.
   */
  function replay(song) {
-  const noteDurMs = song.noteDurMs || 400;
+  const noteDurMs = song.noteDurMs || 500;
   // Flatten all keys into a sequence of notes (including '-') for timing
   const notes = [];
   // Support both old and new song format (list of string or list of list of string)
@@ -73,25 +75,50 @@ Given an item from songs, play each note
       }
       const noteNumber = charToNoteNum[noteChar];
       if (typeof noteNumber !== "undefined") {
-        if (prevNoteNumber !== null) {
-          $(window).trigger('keyboardUp', {
+        // Utter the character at the same time
+        if (typeof window.speechSynthesis !== "undefined") {
+          const utter = new window.SpeechSynthesisUtterance(simplifyChar(noteChar));
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utter);
+        }
+        window.setTimeout(_ => {
+          if (prevNoteNumber !== null) {
+            $(window).trigger('keyboardUp', {
+              time: new Date().getTime(),
+              noteNumber: prevNoteNumber,
+              channel: 0,
+              velocity: 80,
+            });
+          }
+          $(window).trigger('keyboardDown', {
             time: new Date().getTime(),
-            noteNumber: prevNoteNumber,
+            noteNumber: noteNumber,
             channel: 0,
             velocity: 80,
           });
-        }
-        $(window).trigger('keyboardDown', {
-          time: new Date().getTime(),
-          noteNumber: noteNumber,
-          channel: 0,
-          velocity: 80,
-        });
-        prevNoteNumber = noteNumber;
+          prevNoteNumber = noteNumber;
+        }, 90);
       }
       idx++;
       setTimeout(playNext, dur);
     }
     playNext();
   });
+}
+
+function simplifyChar(char) {
+  if (char === '7') {
+    return 'Sev';
+  }
+  // if (char === '8') {
+  //   return '1';
+  // }
+  // if (char === '9') {
+  //   return '2';
+  // }
+  if (char === '0') {
+  //   return '3';
+    return '10';
+  }
+  return char;
 }
