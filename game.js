@@ -13,6 +13,28 @@ Changes:
 - If the correct key is pressed, call simpleKeyboard.turnOn();
 - If the incorrect key is pressed, utter `Press ${correctKey}` and call simpleKeyboard.turnOff();
 */
+let doReMiMode = false;
+let songIdx = 0;
+let challengeMode = false;
+
+function getConfigFromHash() {
+  const hash = window.location.hash.replace(/^#/, '');
+  const params = {};
+  hash.split('&').forEach(pair => {
+    const [k, v] = pair.split('=');
+    if (k) params[k] = v;
+  });
+  return params;
+}
+
+function setConfigToHash() {
+  const params = [];
+  if (doReMiMode) params.push('doReMi=1');
+  if (challengeMode) params.push('challenge=1');
+  if (songIdx > 0) params.push('songIdx=' + songIdx);
+  window.location.hash = params.join('&');
+}
+
 function runGame() {
   const canvas = document.createElement('canvas');
   canvas.width = 1200;
@@ -20,7 +42,6 @@ function runGame() {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
-  let songIdx = 0;
   let keyIdx = 0;
   let flatKeys = [];
   let gameOver = false;
@@ -34,7 +55,7 @@ function runGame() {
     const section = song.keys[sectionIdx];
     section.forEach((row, rIdx) => {
       row.split(' ').forEach((k, cIdx) => {
-        if (k !== '-') arr.push({ row: rIdx, col: cIdx, key: k });
+        if (k !== '_') arr.push({ row: rIdx, col: cIdx, key: k });
       });
     });
     return arr;
@@ -45,13 +66,18 @@ function runGame() {
     ctx.font = '48px Arial';
     ctx.fillStyle = 'black';
     ctx.fillText('Press space', 40, 80);
+    // Show upcoming song name
+    ctx.font = '36px Arial';
+    ctx.fillStyle = 'gray';
+    ctx.fillText(songs[songIdx].name, 40, 140);
   }
 
   async function startSong() {
     waitingForSpace = false;
     keyIdx = 0;
     flatKeys = flattenKeys(songs[songIdx], sectionIdx);
-    render();
+    // Only render the "Press space" screen until replay is finished
+    renderPressSpace();
     const utter1 = new window.SpeechSynthesisUtterance('Listen to this!');
     window.speechSynthesis.cancel();
     await new Promise(resolve => {
@@ -61,20 +87,29 @@ function runGame() {
       utter1.onerror = resolve;
       window.speechSynthesis.speak(utter1);
     });
-    await replay(songs[songIdx]);
+    await replay(songs[songIdx], {doReMiMode: doReMiMode});
+    render(); // Now render the actual song
     const utter2 = new window.SpeechSynthesisUtterance('Can you play it?');
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter2);
     window.addEventListener('keydown', handleKey);
   }
 
-  // Add navigation buttons
+  // Add navigation buttons and challenge/DoReMi checkboxes
   function addNavButtons() {
     // Remove if already present
     let prevBtn = document.getElementById('prevSongBtn');
     let nextBtn = document.getElementById('nextSongBtn');
+    let challengeBox = document.getElementById('challengeCheckbox');
+    let challengeLabel = document.getElementById('challengeLabel');
+    let doReMiBox = document.getElementById('doReMiCheckbox');
+    let doReMiLabel = document.getElementById('doReMiLabel');
     if (prevBtn) prevBtn.remove();
     if (nextBtn) nextBtn.remove();
+    if (challengeBox) challengeBox.remove();
+    if (challengeLabel) challengeLabel.remove();
+    if (doReMiBox) doReMiBox.remove();
+    if (doReMiLabel) doReMiLabel.remove();
 
     prevBtn = document.createElement('button');
     prevBtn.id = 'prevSongBtn';
@@ -94,12 +129,55 @@ function runGame() {
     nextBtn.style.zIndex = 1000;
     nextBtn.style.fontSize = '24px';
 
+    challengeBox = document.createElement('input');
+    challengeBox.type = 'checkbox';
+    challengeBox.id = 'challengeCheckbox';
+    challengeBox.style.position = 'fixed';
+    challengeBox.style.top = '70px';
+    challengeBox.style.right = '40px';
+    challengeBox.style.zIndex = 1000;
+    challengeBox.style.transform = 'scale(1.5)';
+    challengeBox.checked = challengeMode;
+
+    challengeLabel = document.createElement('label');
+    challengeLabel.id = 'challengeLabel';
+    challengeLabel.htmlFor = 'challengeCheckbox';
+    challengeLabel.textContent = 'Challenge';
+    challengeLabel.style.position = 'fixed';
+    challengeLabel.style.top = '70px';
+    challengeLabel.style.right = '80px';
+    challengeLabel.style.zIndex = 1000;
+    challengeLabel.style.fontSize = '24px';
+
+    doReMiBox = document.createElement('input');
+    doReMiBox.type = 'checkbox';
+    doReMiBox.id = 'doReMiCheckbox';
+    doReMiBox.style.position = 'fixed';
+    doReMiBox.style.top = '110px';
+    doReMiBox.style.right = '40px';
+    doReMiBox.style.zIndex = 1000;
+    doReMiBox.style.transform = 'scale(1.5)';
+    doReMiBox.checked = doReMiMode;
+
+    doReMiLabel = document.createElement('label');
+    doReMiLabel.id = 'doReMiLabel';
+    doReMiLabel.htmlFor = 'doReMiCheckbox';
+    doReMiLabel.textContent = 'Do Re Mi';
+    doReMiLabel.style.position = 'fixed';
+    doReMiLabel.style.top = '110px';
+    doReMiLabel.style.right = '80px';
+    doReMiLabel.style.zIndex = 1000;
+    doReMiLabel.style.fontSize = '24px';
+
     prevBtn.onclick = () => {
       if (songIdx > 0) {
         songIdx--;
         sectionIdx = 0;
         keyIdx = 0;
         waitingForSpace = true;
+        challengeMode = challengeBox.checked;
+        doReMiMode = doReMiBox.checked;
+        setConfigToHash();
         render();
         window.removeEventListener('keydown', handleKey);
         window.removeEventListener('keydown', handleSpace);
@@ -112,15 +190,32 @@ function runGame() {
         sectionIdx = 0;
         keyIdx = 0;
         waitingForSpace = true;
+        challengeMode = challengeBox.checked;
+        doReMiMode = doReMiBox.checked;
+        setConfigToHash();
         render();
         window.removeEventListener('keydown', handleKey);
         window.removeEventListener('keydown', handleSpace);
         window.addEventListener('keydown', handleSpace);
       }
     };
+    challengeBox.onchange = () => {
+      challengeMode = challengeBox.checked;
+      setConfigToHash();
+      render();
+    };
+    doReMiBox.onchange = () => {
+      doReMiMode = doReMiBox.checked;
+      setConfigToHash();
+      render();
+    };
 
     document.body.appendChild(prevBtn);
     document.body.appendChild(nextBtn);
+    document.body.appendChild(challengeBox);
+    document.body.appendChild(challengeLabel);
+    document.body.appendChild(doReMiBox);
+    document.body.appendChild(doReMiLabel);
   }
 
   function render() {
@@ -152,15 +247,32 @@ function runGame() {
       let x = 120;
       row.split(' ').filter(k => k !== '').forEach((k, cIdx) => {
         let highlight = false;
+        let played = false;
         if (!gameOver && flatKeys[keyIdx] && flatKeys[keyIdx].row === rIdx && flatKeys[keyIdx].col === cIdx) {
           highlight = true;
         }
-        if (k !== '-') {
-          ctx.fillStyle = highlight ? 'red' : 'black';
-          ctx.fillText(k, x, y);
+        // In challenge mode, only show keys that have been played or are currently highlighted
+        if (challengeMode) {
+          // Find the index of this key in flatKeys
+          const idx = flatKeys.findIndex(obj => obj.row === rIdx && obj.col === cIdx);
+          played = idx > -1 && idx < keyIdx;
+          if (k !== '_' && played) {
+            ctx.fillStyle = 'black';
+            ctx.fillText(k, x, y);
+          } else if (k === '_' && played) {
+            ctx.fillStyle = 'gray';
+            ctx.fillText('_', x, y);
+          } else {
+            // Don't render unplayed keys
+          }
         } else {
-          ctx.fillStyle = 'gray';
-          ctx.fillText('-', x, y);
+          if (k !== '_') {
+            ctx.fillStyle = highlight ? 'red' : 'black';
+            ctx.fillText(k, x, y);
+          } else {
+            ctx.fillStyle = 'gray';
+            ctx.fillText('_', x, y);
+          }
         }
         x += 120;
       });
@@ -169,7 +281,7 @@ function runGame() {
     if (showConfetti) {
       ctx.font = '120px serif';
       ctx.fillStyle = 'orange';
-      ctx.fillText('🎉 🎉 🎉 🎉', 180, 210 + section.length * 96);
+      ctx.fillText('🎉 🎉 🎉 🎉', 180, 210 + (song.keys[sectionIdx] || song.keys[song.keys.length - 1]).length * 96);
     }
   }
 
@@ -326,10 +438,12 @@ function runGame() {
     pressedKeys[e.code] = true;
     if (!flatKeys[keyIdx]) return;
     const correctKey = flatKeys[keyIdx].key;
+    // Use Do Re Mi mode if checked
+    const speakKey = doReMiMode ? simplifyCharToDoReMi(correctKey) : simplifyCharTo123(correctKey);
     if (e.key === correctKey) {
       // Utter the key out loud
       if (typeof window.speechSynthesis !== "undefined") {
-        const utter = new window.SpeechSynthesisUtterance(simplifyChar(correctKey));
+        const utter = new window.SpeechSynthesisUtterance(speakKey);
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utter);
       }
@@ -385,21 +499,15 @@ function runGame() {
   window.addEventListener('keyup', handleKeyUp);
 }
 
-function simplifyChar(char) {
-  if (char === '7') {
-    return 'Sev';
+// Read config from URL hash
+(function initFromHash() {
+  const params = getConfigFromHash();
+  doReMiMode = params.doReMi === '1';
+  challengeMode = params.challenge === '1';
+  if (params.songIdx && !isNaN(params.songIdx)) {
+    songIdx = Math.max(0, Math.min(songs.length - 1, parseInt(params.songIdx, 10)));
   }
-  // if (char === '8') {
-  //   return '1';
-  // }
-  // if (char === '9') {
-  //   return '2';
-  // }
-  if (char === '0') {
-  //   return '3';
-    return '10';
-  }
-  return char;
-}
+})();
 
 runGame();
+

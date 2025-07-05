@@ -1,5 +1,6 @@
 const charToNoteNum = {
-  1: 48+ 12, // 1
+  '`': 47+ 12,
+  1: 48+ 12,
   2: 50+ 12,
   3: 52+ 12,
   4: 53+ 12,
@@ -9,6 +10,8 @@ const charToNoteNum = {
   8: 60+ 12,
   9: 62+ 12,
   0: 64+ 12,
+  '-': 65+12,
+  '=': 67 + 12,
 }
 
 
@@ -28,8 +31,9 @@ Given an item from songs, play each note
   Change:
   - Utter the character the same time we play the note.
   */
- function replay(song) {
+ function replay(song, opts = {}) {
   const noteDurMs = song.noteDurMs || 500;
+  const doReMiMode = opts.doReMiMode || false;
   // Flatten all keys into a sequence of notes (including '-') for timing
   const notes = [];
   // Support both old and new song format (list of string or list of list of string)
@@ -65,7 +69,7 @@ Given an item from songs, play each note
       if (song.swing && idx % 2 === 1) {
         dur = noteDurMs * song.swing;
       }
-      if (noteChar === '-') {
+      if (noteChar === '_') {
         idx++;
         setTimeout(playNext, dur);
         if (idx === notes.length) {
@@ -77,7 +81,8 @@ Given an item from songs, play each note
       if (typeof noteNumber !== "undefined") {
         // Utter the character at the same time
         if (typeof window.speechSynthesis !== "undefined") {
-          const utter = new window.SpeechSynthesisUtterance(simplifyChar(noteChar));
+          const speakKey = doReMiMode ? simplifyCharToDoReMi(noteChar) : simplifyCharTo123(noteChar);
+          const utter = new window.SpeechSynthesisUtterance(speakKey);
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(utter);
         }
@@ -104,21 +109,4 @@ Given an item from songs, play each note
     }
     playNext();
   });
-}
-
-function simplifyChar(char) {
-  if (char === '7') {
-    return 'Sev';
-  }
-  // if (char === '8') {
-  //   return '1';
-  // }
-  // if (char === '9') {
-  //   return '2';
-  // }
-  if (char === '0') {
-  //   return '3';
-    return '10';
-  }
-  return char;
 }
