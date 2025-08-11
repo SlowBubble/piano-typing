@@ -13,7 +13,6 @@ class SimpleKeyboard {
     this.velocity = 0;
   }
   connectKeyToKeyboard() {
-    var self = this;
     var downKeys = {};
 
     $(window).on('keydown.keyboard', evt => {
@@ -25,6 +24,11 @@ class SimpleKeyboard {
       }
       
       if (inInputField) return ;
+
+      // prevent backspace, tab, or space from navigating back in the browser
+      if (evt.which === 8 || evt.which === 9 || evt.which === 32) {
+        evt.preventDefault();
+      }
 
       var keyCode = fixKeyCode(evt.keyCode);
       if (downKeys[keyCode] === true) {
@@ -47,10 +51,6 @@ class SimpleKeyboard {
         });
       }
 
-      // prevent backspace from navigating back in the browser
-      if (evt.which === 8 || evt.which === 32) {
-        evt.preventDefault();
-      }
     });
 
     $(window).on('keyup.keyboard', (evt) => {
