@@ -1,4 +1,3 @@
-
 var pedalOn = false;
 var volumeRange = 120;
 
@@ -135,140 +134,48 @@ function convertKeyCodeToNote(keyCode) {
   return keyCodeToNote[keyCode];
 }
 
-noteNumberToAoeui = function(noteNumber) {
-    var conversion = {
-      41: 'j',  
-      42: 'k',
-      43: 'u',
-      45: '3',
-      47: '`',
-      48: '1',
-      49: '2',
-      50: "'",
-      51: ',',
-      52: 'a',
-      53: ';',
-      54: 'q',
-      55: 'o',
-      56: 'e',
-      57: '.',
-      58: 'p',
-      59: '4',
-      60: '5',
-      61: '6',
-      62: 'y',
-      63: 'f',
-      64: 'i',
-      65: 'x',
-      66: 'b',
-      67: 'i',
-      68: 'h',
-      69: 'g',
-      70: 'c',
-      71: '8',
-      72: '9',
-      73: '0',
-      74: 'r',
-      75: 'l',
-      76: 'n',
-      77: 'v',
-      78: 'z',
-      79: 's',
-      80: '-',
-      81: '/',
-      82: '=',
-      83: ']',
-      84: 'del',
-      86:  '\\',
-      88: '[',
-      89: 'm',
-      90: 'w',
-      91: 't',
-      93: '7',
-    }
-  var ret = conversion[noteNumber];
-  if (!ret) ret = noteNumber.toString();
-
-  return ret;
-}
-
-noteToName = function(noteNumber, alphabet) {
-  noteNumber = (noteNumber - 60) % 12;
-
-  if (noteNumber < 0) {
-    noteNumber += 12;
-  }
-
-  if (alphabet) {
-    if (1) {
-      var conversion = {
-        0: 'C',
-        1: 'C\u266F',
-        2: 'D',
-        3: 'D\u266F',
-        4: 'E',
-        5: 'F',
-        6: 'F\u266F',
-        7: 'G',
-        8: 'G\u266F',
-        9: 'A',
-        10: 'A\u266F',
-        11: 'B',
-      };
-    } else {
-      var conversion = {
-        0: 'C',
-        1: 'D\u266D',
-        2: 'D',
-        3: 'E\u266D',
-        4: 'E',
-        5: 'F',
-        6: 'G\u266D',
-        7: 'G',
-        8: 'A\u266D',
-        9: 'A',
-        10: 'B\u266D',
-        11: 'B',
-      };
-    }
-
-
-  } else {
-    var conversion = {
-      0: 'DO',
-      1: 'DI',
-      2: 'RE',
-      3: 'RI',
-      4: 'MI',
-      5: 'FA',
-      6: 'FI',
-      7: 'SO',
-      8: 'SI',
-      9: 'LA',
-      10: 'LI',
-      11: 'TI',
-    };
-  }
-
-  return conversion[noteNumber];
-}
-
-
+// Map keyCode to note using hardcoded numbers (not referencing charToNoteNum)
 keyCodeToNote = {
-  192: 47 + 12,
-  49: 48+ 12, // 1
-  50: 50+ 12,
-  51: 52+ 12,
-  52: 53+ 12,
-  53: 55+ 12,
-  54: 57+ 12,
-  55: 59+ 12,
-  56: 60+ 12,
-  57: 62+ 12,
-  48: 64+ 12,
-  189: 65+ 12,
-  187: 67+ 12,
-  8: 69+ 12, // backspace
+  192: 59,   // `
+  49: 60,    // 1
+  81: 61,    // q
+  50: 62,    // 2
+  87: 63,    // w
+  51: 64,    // 3
+  52: 65,    // 4
+  82: 66,    // r
+  53: 67,    // 5
+  84: 68,    // t
+  54: 69,    // 6
+  89: 70,    // y
+  55: 71,    // 7
+  56: 72,    // 8
+  73: 73,    // i
+  57: 74,    // 9
+  79: 75,    // o
+  48: 76,    // 0
+  189: 77,   // -
+  219: 78,   // [
+  187: 79,   // =
+  9: 58,     // Tab
+  65: 57,    // a
+  90: 56,    // z
+  83: 55,    // s
+  88: 54,    // x
+  68: 53,    // d
+  70: 52,    // f
+  86: 51,    // v
+  71: 50,    // g
+  66: 49,    // b
+  72: 48,    // h
+  74: 47,    // j
+  77: 46,    // m
+  75: 45,    // k
+  188: 44,   // ,
+  76: 43,    // l
+  190: 42,   // .
+  186: 41,   // ;
+  222: 40,   // '
 };
 
 noteToKeyCode = {};
