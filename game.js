@@ -459,27 +459,6 @@ function runGame() {
         return;
       }
       render();
-    } else if (!e.ctrlKey && !e.metaKey) {
-      // Alert wrong key, but skip if challengeMode
-      if (!challengeMode) {
-        if (typeof simpleKeyboard !== "undefined" && simpleKeyboard.turnOff) {
-          simpleKeyboard.turnOff();
-        }
-        if (typeof window.speechSynthesis !== "undefined") {
-          isUttering = true;
-          const utter = new window.SpeechSynthesisUtterance(`Press ${correctKey}`);
-          window.speechSynthesis.cancel();
-          utter.onend = () => {
-            isUttering = false;
-            simpleKeyboard.turnOn();
-          };
-          utter.onerror = () => {
-            isUttering = false;
-            simpleKeyboard.turnOn();
-          };
-          window.speechSynthesis.speak(utter);
-        }
-      }
     }
   }
 
