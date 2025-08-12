@@ -327,7 +327,7 @@ const songs = [
         '2 4 6 8',
         '3 5 7 9',
         '4 6 8 0',
-        '4 5 7 9 ',
+        '4 5 7 9',
         '8 _ _ _',
       ],
     ],
@@ -502,7 +502,7 @@ const songs = [
     noteDurMs: 300,
   },
   {
-    name: 'I love miso soup (short)',
+    name: 'I love miso (short)',
     keys: [
       [
         '_ 5 5 5',
