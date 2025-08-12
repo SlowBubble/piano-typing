@@ -15,6 +15,14 @@ const songs = [
       ],
     ],
     swing: 0.7,
+    comping: [
+      [
+        '_ _ _ _',
+        '1 _ ` Tab',
+        'a _ s _',
+        'f _ _ _',
+      ],
+    ],
   },
   {
     name: 'Twinkle Twinkle Little Star (short)',
@@ -27,6 +35,14 @@ const songs = [
       ],
     ],
     swing: 0.8,
+    comping: [
+      [
+        '_ _ _ _',
+        '_ _ _ _',
+        'a _ s _',
+        'd s z _',
+      ],
+    ],
   },
   {
     name: 'Lightly Row (short)',
@@ -39,6 +55,14 @@ const songs = [
       ],
     ],
     swing: 0.9,
+    comping: [
+      [
+        '_ _ _ _',
+        '_ _ _ _',
+        'f s ` Tab',
+        'z _ _ _',
+      ],
+    ],
   },
   {
     name: 'Aura Lee (short)',
@@ -51,6 +75,14 @@ const songs = [
       ],
     ],
     swing: 0.9,
+    comping: [
+      [
+        '_ _ _ _',
+        '_ _ _ _',
+        'r _ 4 _',
+        'w _ _ _',
+      ],
+    ],
   },
   {
     name: 'Hot Cross Buns',
