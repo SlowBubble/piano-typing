@@ -235,11 +235,12 @@ Given an item from songs, play each note
 
   return new Promise(resolve => {
     let idx = 0;
+    let noteIdx = 0; // Track actual notes (excluding rests)
     let prevNoteNumber = null;
     let prevCompingNoteNumber = null;
     let lastHandPosition = fingerCanvas ? fingerCanvas.width / 2 : 300; // Default center
     function playNext() {
-      console.log('playNext called - idx:', idx, 'maxLen:', maxLen);
+      console.log('playNext called - idx:', idx, 'noteIdx:', noteIdx, 'maxLen:', maxLen);
       if (idx >= maxLen) {
         console.log('Demo ending - releasing notes and clearing canvas');
         // Release last notes if any
@@ -265,26 +266,30 @@ Given an item from songs, play each note
         return;
       }
 
-      // Show finger highlighting for current note
-      if (flatKeys && flatKeys[idx] && flatKeys[idx].fingering) {
-        const currentFingering = parseInt(flatKeys[idx].fingering);
-        console.log('Demo note', idx, '- key:', flatKeys[idx].key, 'fingering:', currentFingering);
-        const handPosition = renderDemoFingers(currentFingering, idx, lastHandPosition);
+      // Main melody
+      const noteChar = notes[idx] || '_';
+      
+      // Show finger highlighting for current note (only for actual notes, not rests)
+      if (noteChar !== '_' && flatKeys && flatKeys[noteIdx] && flatKeys[noteIdx].fingering) {
+        const currentFingering = parseInt(flatKeys[noteIdx].fingering);
+        console.log('Demo note', idx, 'noteIdx:', noteIdx, '- key:', flatKeys[noteIdx].key, 'fingering:', currentFingering);
+        const handPosition = renderDemoFingers(currentFingering, noteIdx, lastHandPosition);
         if (handPosition !== null) {
           lastHandPosition = handPosition;
           console.log('Demo hand position updated to:', lastHandPosition);
         }
-      } else {
-        console.log('Demo note', idx, '- no fingering data, preserving position:', lastHandPosition);
+      } else if (noteChar !== '_') {
+        console.log('Demo note', idx, 'noteIdx:', noteIdx, '- no fingering data, preserving position:', lastHandPosition);
         // Render with no highlighting but preserve hand position
-        const handPosition = renderDemoFingers(null, idx, lastHandPosition);
+        const handPosition = renderDemoFingers(null, noteIdx, lastHandPosition);
         if (handPosition !== null) {
           lastHandPosition = handPosition;
         }
+      } else {
+        console.log('Demo rest note', idx, '- skipping fingering, preserving position:', lastHandPosition);
+        // For rest notes, don't change fingering display
       }
 
-      // Main melody
-      const noteChar = notes[idx] || '_';
       let dur = noteDurMs;
       if (song.swing && idx % 2 === 1) {
         dur = noteDurMs * song.swing;
@@ -345,6 +350,11 @@ Given an item from songs, play each note
             prevCompingNoteNumber = compingNoteNumber;
           }, 90);
         }
+      }
+
+      // Increment noteIdx only for actual notes (not rests)
+      if (noteChar !== '_') {
+        noteIdx++;
       }
 
       idx++;
