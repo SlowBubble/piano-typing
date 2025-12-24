@@ -42,23 +42,204 @@ function runGame() {
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
+  // Create finger display canvas
+  const fingerCanvas = document.createElement('canvas');
+  fingerCanvas.width = 600; // 50% bigger (was 400)
+  fingerCanvas.height = 180; // 50% bigger (was 120)
+  fingerCanvas.style.position = 'fixed';
+  fingerCanvas.style.bottom = '20px';
+  fingerCanvas.style.left = '50%';
+  fingerCanvas.style.transform = 'translateX(-50%)';
+  fingerCanvas.style.zIndex = '1000';
+  fingerCanvas.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+  fingerCanvas.style.border = '2px solid #333';
+  fingerCanvas.style.borderRadius = '10px';
+  document.body.appendChild(fingerCanvas);
+  const fingerCtx = fingerCanvas.getContext('2d');
+
   let keyIdx = 0;
   let flatKeys = [];
   let gameOver = false;
   let showConfetti = false;
   let sectionIdx = 0;
   let waitingForSpace = true;
+  let keyPressed = false; // Track if current key has been pressed
+  let anyKeyDown = false; // Track if any key is physically held down
+  let demoHandPosition = null; // Track the demo's final hand position
+  let songCompleted = false; // Flag to track when song is completed
+  let demoInProgress = false; // Flag to track when demo is playing
 
   function flattenKeys(song, sectionIdx) {
-    // Returns array of {row, col, key} for the current section
+    // Returns array of {row, col, key, fingering} for the current section
     const arr = [];
     const section = song.keys[sectionIdx];
+    
+    // Calculate the starting row index in the fingering array
+    let fingeringRowOffset = 0;
+    for (let i = 0; i < sectionIdx; i++) {
+      fingeringRowOffset += song.keys[i].length;
+    }
+    
     section.forEach((row, rIdx) => {
       row.split(' ').forEach((k, cIdx) => {
-        if (k !== '_') arr.push({ row: rIdx, col: cIdx, key: k });
+        if (k !== '_') {
+          let fingering = null;
+          // Get fingering if available - use correct row index
+          const fingeringRowIdx = fingeringRowOffset + rIdx;
+          if (song.fingering && song.fingering[fingeringRowIdx]) {
+            const fingeringRow = song.fingering[fingeringRowIdx].split(' ');
+            if (fingeringRow[cIdx] && fingeringRow[cIdx] !== '_') {
+              fingering = fingeringRow[cIdx];
+            }
+          }
+          arr.push({ row: rIdx, col: cIdx, key: k, fingering: fingering });
+        }
       });
     });
     return arr;
+  }
+
+  // Function to get column position for a key
+  function getKeyColumn(key) {
+    const keyColumns = {
+      '1': 0, '2': 1, '3': 2, '4': 3, '5': 4, 
+      '6': 5, '7': 6, '8': 7, '9': 8, '0': 9
+    };
+    return keyColumns[key] !== undefined ? keyColumns[key] : -1;
+  }
+
+  function renderFingers() {
+    fingerCtx.clearRect(0, 0, fingerCanvas.width, fingerCanvas.height);
+    
+    console.log('renderFingers called - keyIdx:', keyIdx, 'flatKeys.length:', flatKeys.length, 'waitingForSpace:', waitingForSpace, 'gameOver:', gameOver, 'songCompleted:', songCompleted);
+    
+    // Only show fingers if current song has fingering data and we're not waiting for space
+    const song = songs[songIdx];
+    if (!song.fingering || waitingForSpace || gameOver || songCompleted) {
+      console.log('Early return: no fingering, waiting for space, game over, or song completed');
+      return;
+    }
+
+    // Don't show anything if we've reached the end of the song
+    if (keyIdx >= flatKeys.length) {
+      console.log('Early return: reached end of song');
+      return;
+    }
+
+    // Get current fingering - show hand but control highlighting based on key state
+    let currentFingering = null;
+    let currentKey = null;
+    let showHighlighting = true;
+    
+    if (flatKeys[keyIdx] && flatKeys[keyIdx].fingering) {
+      currentFingering = parseInt(flatKeys[keyIdx].fingering);
+      currentKey = flatKeys[keyIdx].key;
+      // Remove highlighting when any key is down or when correct key was pressed
+      showHighlighting = !anyKeyDown && !keyPressed;
+    }
+
+    // Draw keyboard columns (1,2,3,4,5,6,7,8,9,0)
+    const columnWidth = 50;
+    const startX = 50;
+    const columnY = 20;
+    
+    fingerCtx.strokeStyle = '#ccc';
+    fingerCtx.lineWidth = 1;
+    fingerCtx.fillStyle = '#666';
+    fingerCtx.font = '16px Arial';
+    fingerCtx.textAlign = 'center';
+    
+    for (let i = 0; i < 10; i++) {
+      const x = startX + i * columnWidth;
+      const label = i === 9 ? '0' : (i + 1).toString();
+      
+      // Draw column separator line (between numbers, not on them)
+      if (i > 0) {
+        fingerCtx.beginPath();
+        fingerCtx.moveTo(x, columnY);
+        fingerCtx.lineTo(x, fingerCanvas.height - 40);
+        fingerCtx.stroke();
+      }
+      
+      // Draw column label at the bottom
+      fingerCtx.fillText(label, x + columnWidth/2, fingerCanvas.height - 10);
+    }
+
+    // Draw the hand if we have fingering data
+    const shouldDrawHand = (currentKey && currentFingering);
+    
+    if (shouldDrawHand) {
+      // Calculate hand position based on current key
+      let handCenterX = fingerCanvas.width / 2; // Default center
+      
+      if (currentKey && currentFingering) {
+        // Calculate position based on current key
+        const keyColumn = getKeyColumn(currentKey);
+        if (keyColumn !== -1) {
+          const targetColumnX = startX + keyColumn * columnWidth + columnWidth/2;
+          // Position hand so the highlighted finger aligns with the target column
+          const fingerOffsets = [-105, -52.5, -18, 18, 52.5]; // Relative to hand center
+          const highlightedFingerOffset = fingerOffsets[currentFingering - 1];
+          handCenterX = targetColumnX - highlightedFingerOffset;
+          console.log('Calculated position for key', currentKey, 'finger', currentFingering, ':', handCenterX);
+        }
+      }
+      
+      const handCenterY = 135;
+
+      // Helper function to draw rounded rectangle
+      function drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+      }
+
+      // Finger positions and sizes (50% bigger) - thumb is much shorter
+      const fingers = [
+        { x: handCenterX - 105, y: handCenterY, width: 27, height: 45, angle: -0.3 }, // Thumb (1) - much shorter (was 60)
+        { x: handCenterX - 52.5, y: handCenterY, width: 24, height: 90, angle: 0 },   // Index (2) - 50% bigger
+        { x: handCenterX - 18, y: handCenterY, width: 24, height: 105, angle: 0 },    // Middle (3) - 50% bigger
+        { x: handCenterX + 18, y: handCenterY, width: 24, height: 90, angle: 0 },     // Ring (4) - 50% bigger
+        { x: handCenterX + 52.5, y: handCenterY, width: 21, height: 82.5, angle: 0 } // Pinky (5) - 50% bigger
+      ];
+
+      for (let i = 0; i < 5; i++) {
+        const finger = fingers[i];
+        const fingerNum = i + 1;
+        const isHighlighted = showHighlighting && (currentFingering === fingerNum);
+        
+        fingerCtx.save();
+        fingerCtx.translate(finger.x, finger.y);
+        fingerCtx.rotate(finger.angle);
+        
+        // Draw finger
+        fingerCtx.fillStyle = isHighlighted ? '#ff6b6b' : '#f4c2a1';
+        drawRoundedRect(fingerCtx, -finger.width/2, -finger.height, finger.width, finger.height, 8);
+        fingerCtx.fill();
+        
+        // Draw finger border
+        fingerCtx.strokeStyle = isHighlighted ? '#d63031' : '#d4a574';
+        fingerCtx.lineWidth = 2;
+        drawRoundedRect(fingerCtx, -finger.width/2, -finger.height, finger.width, finger.height, 8);
+        fingerCtx.stroke();
+        
+        // Draw fingertip
+        fingerCtx.fillStyle = isHighlighted ? '#ff5252' : '#e8b896';
+        fingerCtx.beginPath();
+        fingerCtx.ellipse(0, -finger.height + 12, finger.width/2 - 3, 12, 0, 0, 2 * Math.PI); // 50% bigger
+        fingerCtx.fill();
+        
+        fingerCtx.restore();
+      }
+    }
   }
 
   function renderPressSpace() {
@@ -75,6 +256,12 @@ function runGame() {
   async function startSong() {
     waitingForSpace = false;
     keyIdx = 0;
+    keyPressed = false; // Reset key pressed state
+    anyKeyDown = false; // Reset any key down state
+    pressedKeys = {}; // Reset pressed keys tracking
+    demoHandPosition = null; // Reset demo hand position
+    songCompleted = false; // Reset song completed flag
+    demoInProgress = false; // Reset demo flag
     flatKeys = flattenKeys(songs[songIdx], sectionIdx);
     // Only render the "Press space" screen until replay is finished
     renderPressSpace();
@@ -87,12 +274,20 @@ function runGame() {
       utter1.onerror = resolve;
       window.speechSynthesis.speak(utter1);
     });
-    await replay(songs[songIdx], {doReMiMode: doReMiMode});
-    render(); // Now render the actual song
+    demoInProgress = true; // Demo starting
+    const finalHandPosition = await replay(songs[songIdx], {doReMiMode: doReMiMode, fingerCtx: fingerCtx, fingerCanvas: fingerCanvas, flatKeys: flatKeys});
+    demoInProgress = false; // Demo finished
+    demoHandPosition = finalHandPosition; // Store the demo's final hand position
+    console.log('Demo finished, final hand position:', finalHandPosition);
+    console.log('First user note - keyIdx:', keyIdx, 'flatKeys[0]:', flatKeys[0]);
+    
+    // Render the main canvas with the song keys AND the first note fingering
+    render();
+    
     const utter2 = new window.SpeechSynthesisUtterance('Can you play it?');
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter2);
-    window.addEventListener('keydown', handleKey);
+    // Event listener is already set up globally
   }
 
   // Add navigation buttons and challenge/DoReMi checkboxes
@@ -179,9 +374,7 @@ function runGame() {
         doReMiMode = doReMiBox.checked;
         setConfigToHash();
         render();
-        window.removeEventListener('keydown', handleKey);
-        window.removeEventListener('keydown', handleSpace);
-        window.addEventListener('keydown', handleSpace);
+        // Event listener is already set up globally
       }
     };
     nextBtn.onclick = () => {
@@ -194,9 +387,7 @@ function runGame() {
         doReMiMode = doReMiBox.checked;
         setConfigToHash();
         render();
-        window.removeEventListener('keydown', handleKey);
-        window.removeEventListener('keydown', handleSpace);
-        window.addEventListener('keydown', handleSpace);
+        // Event listener is already set up globally
       }
     };
     challengeBox.onchange = () => {
@@ -219,9 +410,11 @@ function runGame() {
   }
 
   function render() {
+    console.log('render() called - waitingForSpace:', waitingForSpace, 'demoHandPosition:', demoHandPosition);
     addNavButtons();
     if (waitingForSpace) {
       renderPressSpace();
+      renderFingers();
       return;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -229,6 +422,7 @@ function runGame() {
       ctx.font = '80px Arial';
       ctx.fillStyle = 'black';
       ctx.fillText('Game Over', 400, 300);
+      renderFingers();
       return;
     }
     const song = songs[songIdx];
@@ -283,6 +477,9 @@ function runGame() {
       ctx.fillStyle = 'orange';
       ctx.fillText('🎉 🎉 🎉 🎉', 180, 210 + (song.keys[sectionIdx] || song.keys[song.keys.length - 1]).length * 96);
     }
+    
+    // Render fingers
+    renderFingers();
   }
 
   function nextSectionOrSong() {
@@ -290,6 +487,10 @@ function runGame() {
     const song = songs[songIdx];
     sectionIdx++;
     if (sectionIdx >= song.keys.length) {
+      // Song completed - set flag and hide fingers immediately
+      songCompleted = true;
+      fingerCtx.clearRect(0, 0, fingerCanvas.width, fingerCanvas.height);
+      
       // Only show confetti and wait between songs
       setTimeout(() => {
         showConfetti = true;
@@ -411,6 +612,7 @@ function runGame() {
         // Move to next song
         songIdx++;
         sectionIdx = 0;
+        songCompleted = false; // Reset for next song
         if (songIdx >= songs.length) {
           gameOver = true;
           render();
@@ -418,15 +620,17 @@ function runGame() {
         }
         waitingForSpace = true;
         render();
-        window.addEventListener('keydown', handleSpace);
+        // Event listener is already set up globally
       }, 5000);
       return;
     }
     // Move to next section immediately (no confetti, no wait)
     keyIdx = 0;
+    keyPressed = false; // Reset key pressed state for new section
+    songCompleted = false; // Reset for new section
     flatKeys = flattenKeys(songs[songIdx], sectionIdx);
     render();
-    window.addEventListener('keydown', handleKey);
+    // Event listener is already set up globally
   }
 
   let pressedKeys = {};
@@ -437,11 +641,20 @@ function runGame() {
     if (isUttering) return;
     if (pressedKeys[e.code]) return; // Ignore repeat while held
     pressedKeys[e.code] = true;
+    anyKeyDown = true; // Mark that a key is down
+    
     if (!flatKeys[keyIdx]) return;
     const correctKey = flatKeys[keyIdx].key;
     // Use Do Re Mi mode if checked
     const speakKey = doReMiMode ? simplifyCharToDoReMi(correctKey) : simplifyCharTo123(correctKey);
     if (e.key === correctKey) {
+      // Mark key as pressed but don't advance yet
+      keyPressed = true;
+      // Render to remove highlighting but keep hand in same position (only if not during demo)
+      if (!demoInProgress) {
+        renderFingers();
+      }
+      
       // Utter the key out loud
       if (typeof window.speechSynthesis !== "undefined") {
         const utter = new window.SpeechSynthesisUtterance(speakKey);
@@ -451,25 +664,53 @@ function runGame() {
       if (typeof simpleKeyboard !== "undefined" && simpleKeyboard.turnOn) {
         simpleKeyboard.turnOn();
       }
-      keyIdx++;
-      if (keyIdx >= flatKeys.length) {
-        // Section complete
-        window.removeEventListener('keydown', handleKey);
-        nextSectionOrSong();
-        return;
-      }
-      render();
     }
   }
 
   function handleKeyUp(e) {
     pressedKeys[e.code] = false;
+    // Check if any keys are still pressed
+    anyKeyDown = Object.values(pressedKeys).some(pressed => pressed);
+    
+    // If the correct key was pressed and is now released, advance to next key
+    if (keyPressed && flatKeys[keyIdx] && e.key === flatKeys[keyIdx].key) {
+      // Clear demo hand position once user starts playing
+      if (keyIdx === 0) {
+        demoHandPosition = null;
+      }
+      
+      keyIdx++;
+      if (keyIdx >= flatKeys.length) {
+        // Section complete
+        nextSectionOrSong();
+        return;
+      }
+      // Reset keyPressed for next key
+      keyPressed = false;
+    }
+    
+    // Re-render to update hand position and highlighting
+    if (!waitingForSpace && !gameOver && !demoInProgress) {
+      renderFingers();
+    }
   }
 
-  function handleSpace(e) {
-    if (e.code === 'Space' || e.key === ' ') {
-      window.removeEventListener('keydown', handleSpace);
+  function handleAllKeyDown(e) {
+    anyKeyDown = true;
+    // Re-render to update hand highlighting when any key is pressed, but not during demo
+    if (!waitingForSpace && !gameOver && !demoInProgress) {
+      renderFingers();
+    }
+    
+    // Handle space key when waiting
+    if (waitingForSpace && (e.code === 'Space' || e.key === ' ')) {
       startSong();
+      return;
+    }
+    
+    // Handle game keys when playing
+    if (!waitingForSpace) {
+      handleKey(e);
     }
   }
 
@@ -478,7 +719,7 @@ function runGame() {
   keyIdx = 0;
   waitingForSpace = true;
   render();
-  window.addEventListener('keydown', handleSpace);
+  window.addEventListener('keydown', handleAllKeyDown);
   window.addEventListener('keyup', handleKeyUp);
 }
 
