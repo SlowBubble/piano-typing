@@ -468,6 +468,7 @@ function runGame() {
         let played = false;
         if (!gameOver && flatKeys[keyIdx] && flatKeys[keyIdx].row === rIdx && flatKeys[keyIdx].col === cIdx) {
           highlight = true;
+          console.log('Highlighting key at row:', rIdx, 'col:', cIdx, 'key:', k, 'keyIdx:', keyIdx);
         }
         // In challenge mode, only show keys that have been played or are currently highlighted
         if (challengeMode) {
@@ -698,6 +699,7 @@ function runGame() {
     
     // If the correct key was pressed and is now released, advance to next key
     if (keyPressed && flatKeys[keyIdx] && e.key === flatKeys[keyIdx].key) {
+      console.log('Advancing from keyIdx:', keyIdx, 'to:', keyIdx + 1, 'flatKeys.length:', flatKeys.length);
       // Clear demo hand position once user starts playing
       if (keyIdx === 0) {
         demoHandPosition = null;
@@ -711,6 +713,10 @@ function runGame() {
       }
       // Reset keyPressed for next key
       keyPressed = false;
+      console.log('New keyIdx:', keyIdx, 'next key:', flatKeys[keyIdx] ? flatKeys[keyIdx].key : 'none');
+      
+      // Force a render to update the main canvas highlighting
+      render();
     }
     
     // Re-render to update hand position and highlighting
