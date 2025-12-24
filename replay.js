@@ -119,17 +119,41 @@ Given an item from songs, play each note
       const x = startX + i * columnWidth;
       const label = i === 9 ? '0' : (i + 1).toString();
       
-      // Draw column separator line (between numbers, not on them)
+      // Draw column separator line (dividing numbers and extending down) - 60% length
       if (i > 0) {
+        const lineStart = 0; // Start from top to divide numbers
+        const lineEnd = columnY + 20 + (fingerCanvas.height - 40) * 0.6; // 60% length from original start
         fingerCtx.beginPath();
-        fingerCtx.moveTo(x, columnY);
-        fingerCtx.lineTo(x, fingerCanvas.height - 40);
+        fingerCtx.moveTo(x, lineStart);
+        fingerCtx.lineTo(x, lineEnd);
         fingerCtx.stroke();
       }
       
-      // Draw column label at the bottom
-      fingerCtx.fillText(label, x + columnWidth/2, fingerCanvas.height - 10);
+      // Draw column label at the top
+      fingerCtx.fillText(label, x + columnWidth/2, 15);
     }
+
+    // Draw horizontal line to cap off the column separators
+    const capY = columnY + 20 + (fingerCanvas.height - 40) * 0.6;
+    fingerCtx.beginPath();
+    fingerCtx.moveTo(startX + columnWidth, capY); // Start after first column
+    fingerCtx.lineTo(startX + 9 * columnWidth, capY); // End before last column
+    fingerCtx.stroke();
+
+    // Draw black rectangles like piano black keys between adjacent keys
+    // Skip between 3,4 and 7,8 (like E-F and B-C on piano)
+    fingerCtx.fillStyle = '#333';
+    const blackKeyPositions = [1, 2, 4, 5, 6, 8, 9]; // After keys 1,2,4,5,6,8,9
+    
+    // Calculate where black keys should end (above the tallest finger)
+    const handCenterY = fingerCanvas.height - 20;
+    const tallestFingerHeight = 105; // Middle finger height
+    const blackKeyBottom = Math.max(30, handCenterY - tallestFingerHeight - 10); // 10px gap above fingers, minimum 30px
+    
+    blackKeyPositions.forEach(pos => {
+      const blackKeyX = startX + pos * columnWidth - 10;
+      fingerCtx.fillRect(blackKeyX, 0, 20, blackKeyBottom);
+    });
 
     // Calculate hand position based on current key
     let handCenterX = previousHandPosition || (fingerCanvas.width / 2); // Use previous position or default center
@@ -143,8 +167,6 @@ Given an item from songs, play each note
         handCenterX = targetColumnX - highlightedFingerOffset;
       }
     }
-
-    const handCenterY = 135;
 
     // Finger positions and sizes (50% bigger) - thumb is much shorter
     const fingers = [
